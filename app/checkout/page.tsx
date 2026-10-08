@@ -107,6 +107,7 @@ export default function CheckoutPage() {
         price: item.product.discountPrice || item.product.price,
         quantity: item.quantity,
         image: item.product.images[0] || '',
+        sku: item.product.sku || `HC-SKU-${item.product.id.substring(0, 6).toUpperCase()}`,
         gstRate: item.product.gstRate ?? 5
       }));
 

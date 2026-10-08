@@ -278,14 +278,14 @@ export const ShippingLabelModal: React.FC<ShippingLabelModalProps> = ({ order, o
                 <tbody>
                   {order.items.map((item, idx) => (
                     <tr key={idx} className="border-b border-black font-medium text-black">
-                      <td className="p-2 border-r border-black font-mono font-bold">
-                        {item.sku || ''}
+                      <td className="p-2 border-r border-black font-mono font-bold uppercase tracking-wider">
+                        {item.sku || `HC-SKU-${item.productId.substring(0, 6).toUpperCase()}`}
                       </td>
                       <td className="p-2 border-r border-black text-center font-bold">
                         {item.quantity}
                       </td>
                       <td className="p-2 font-mono font-bold">
-                        {order.id}_{idx + 1}
+                        {order.orderId || order.id}_{idx + 1}
                       </td>
                     </tr>
                   ))}

@@ -11,6 +11,7 @@ export interface Product {
   id: string;
   title: string;
   slug: string;
+  sku?: string;
   price: number;
   discountPrice?: number;
   categoryId: string;
@@ -62,6 +63,7 @@ export type OrderStatus = 'pending' | 'processing' | 'shipped' | 'delivered' | '
 
 export interface Order {
   id: string;
+  orderId?: string;
   userId?: string;
   customerDetails: CustomerDetails;
   items: OrderItem[];
@@ -96,6 +98,8 @@ export interface StoreSettings {
   gstin: string;
   returnCode: string;
   defaultHsn: string;
+  logoUrl?: string;
+  faviconUrl?: string;
 }
 
 export interface Coupon {
@@ -123,4 +127,24 @@ export interface Banner {
 export interface CartItem {
   product: Product;
   quantity: number;
+}
+
+export interface CourierPartner {
+  id: string;
+  name: string;
+  trackingUrlPattern?: string;
+  active: boolean;
+}
+
+export interface StockNotification {
+  id: string;
+  productId: string;
+  productTitle: string;
+  productImage?: string;
+  productSku?: string;
+  customerName: string;
+  customerPhone: string;
+  customerEmail?: string;
+  status: 'pending' | 'notified';
+  createdAt: string;
 }

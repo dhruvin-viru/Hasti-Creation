@@ -70,8 +70,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       {/* Card Info */}
       <div className="p-5 flex-1 flex flex-col justify-between space-y-3">
         <div>
-          <div className="text-[10px] font-extrabold uppercase tracking-widest text-brand-600 dark:text-brand-400 mb-1">
-            {product.categoryName || 'General Gear'}
+          <div className="flex items-center justify-between gap-1 mb-1">
+            <span className="text-[10px] font-extrabold uppercase tracking-widest text-brand-600 dark:text-brand-400 truncate">
+              {product.categoryName || 'General Gear'}
+            </span>
+            <span className="text-[10px] font-mono font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded flex-shrink-0">
+              {product.sku || `HC-SKU-${product.id.substring(0, 6).toUpperCase()}`}
+            </span>
           </div>
 
           <Link href={`/products/${product.id}`} className="block">
@@ -102,11 +107,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           <div className="flex items-center justify-between gap-2">
             <div>
               <div className="text-lg font-black text-slate-900 dark:text-white tracking-tight">
-                ${price.toFixed(2)}
+                ₹{price.toFixed(2)}
               </div>
               {hasDiscount && (
                 <div className="text-xs text-slate-400 line-through font-medium">
-                  ${product.price.toFixed(2)}
+                  ₹{product.price.toFixed(2)}
                 </div>
               )}
             </div>

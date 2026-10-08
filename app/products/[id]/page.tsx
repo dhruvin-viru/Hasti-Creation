@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { getProductById } from '@/lib/firestoreServices';
+import { getProductById, createStockNotification } from '@/lib/firestoreServices';
 import { Product } from '@/types/ecommerce';
 import { useCartStore } from '@/store/useCartStore';
 import { ReviewSection } from '@/components/store/ReviewSection';
@@ -17,7 +17,10 @@ import {
   RotateCcw, 
   Plus, 
   Minus,
-  ChevronRight
+  ChevronRight,
+  Bell,
+  X,
+  Send
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -29,6 +32,13 @@ export default function ProductDetailPage() {
   const [loading, setLoading] = useState(true);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
+
+  // Notify Me Modal State
+  const [showNotifyModal, setShowNotifyModal] = useState(false);
+  const [customerName, setCustomerName] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [customerEmail, setCustomerEmail] = useState('');
+  const [isSubmittingNotify, setIsSubmittingNotify] = useState(false);
 
   const { addItem } = useCartStore();
 
@@ -65,10 +75,42 @@ export default function ProductDetailPage() {
 
   const price = product.discountPrice || product.price;
   const hasDiscount = Boolean(product.discountPrice && product.discountPrice < product.price);
+  const isOutOfStock = product.stock <= 0;
 
   const handleAddToCart = () => {
     addItem(product, quantity);
     toast.success(`Added ${quantity}x "${product.title}" to your cart!`);
+  };
+
+  const handleNotifySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!customerName.trim() || !customerPhone.trim()) {
+      toast.error('Please enter your name and contact phone number');
+      return;
+    }
+
+    setIsSubmittingNotify(true);
+    try {
+      await createStockNotification({
+        productId: product.id,
+        productTitle: product.title,
+        productImage: product.images[0] || '',
+        productSku: product.sku || `HC-SKU-${product.id.substring(0, 6).toUpperCase()}`,
+        customerName: customerName.trim(),
+        customerPhone: customerPhone.trim(),
+        customerEmail: customerEmail.trim() || undefined
+      });
+
+      toast.success(`Request submitted! We will alert you on WhatsApp/Phone when "${product.title}" is back in stock.`);
+      setShowNotifyModal(false);
+      setCustomerName('');
+      setCustomerPhone('');
+      setCustomerEmail('');
+    } catch (error) {
+      toast.error('Failed to submit restock notification request.');
+    } finally {
+      setIsSubmittingNotify(false);
+    }
   };
 
   return (
@@ -119,9 +161,16 @@ export default function ProductDetailPage() {
         {/* Details & Specs */}
         <div className="space-y-6">
           <div>
-            <span className="inline-block px-3 py-1 rounded-full text-[11px] font-extrabold uppercase bg-brand-50 text-brand-700 dark:bg-brand-950 dark:text-brand-300 mb-2">
-              {product.categoryName || 'Premium Product'}
-            </span>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="inline-block px-3 py-1 rounded-full text-[11px] font-extrabold uppercase bg-brand-50 text-brand-700 dark:bg-brand-950 dark:text-brand-300">
+                {product.categoryName || 'Premium Product'}
+              </span>
+              {product.sku && (
+                <span className="inline-block px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                  SKU: {product.sku}
+                </span>
+              )}
+            </div>
 
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
               {product.title}
@@ -139,12 +188,14 @@ export default function ProductDetailPage() {
 
               <div className="h-4 w-px bg-slate-200" />
 
-              {product.stock > 0 ? (
+              {!isOutOfStock ? (
                 <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600">
                   <CheckCircle2 className="w-4 h-4" /> {product.stock} Units In Stock
                 </span>
               ) : (
-                <span className="text-xs font-semibold text-rose-600">Out of Stock</span>
+                <span className="inline-flex items-center gap-1 text-xs font-extrabold px-2.5 py-1 rounded-md bg-rose-100 text-rose-700 border border-rose-200">
+                  Out of Stock
+                </span>
               )}
             </div>
           </div>
@@ -154,15 +205,15 @@ export default function ProductDetailPage() {
             <div>
               <span className="text-xs text-slate-400 block font-medium">Price</span>
               <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-extrabold text-slate-900 dark:text-white">${price.toFixed(2)}</span>
+                <span className="text-3xl font-extrabold text-slate-900 dark:text-white">₹{price.toFixed(2)}</span>
                 {hasDiscount && (
-                  <span className="text-base text-slate-400 line-through">${product.price.toFixed(2)}</span>
+                  <span className="text-base text-slate-400 line-through">₹{product.price.toFixed(2)}</span>
                 )}
               </div>
             </div>
             {hasDiscount && (
               <span className="px-3 py-1 rounded-full text-xs font-extrabold bg-accent-600 text-white uppercase">
-                Save ${(product.price - price).toFixed(2)}
+                Save ₹{(product.price - price).toFixed(2)}
               </span>
             )}
           </div>
@@ -187,35 +238,55 @@ export default function ProductDetailPage() {
             </div>
           )}
 
-          {/* Quantity & Add to Cart */}
+          {/* Action Buttons: Add to Cart OR Notify Me when Out of Stock */}
           <div className="pt-4 border-t border-slate-200 dark:border-slate-800 space-y-4">
-            <div className="flex items-center gap-4">
-              <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Quantity:</span>
-              <div className="flex items-center border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900">
+            {!isOutOfStock ? (
+              <>
+                <div className="flex items-center gap-4">
+                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Quantity:</span>
+                  <div className="flex items-center border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900">
+                    <button
+                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                      className="p-2 text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-l-xl"
+                    >
+                      <Minus className="w-4 h-4" />
+                    </button>
+                    <span className="px-4 text-sm font-bold text-slate-800 dark:text-slate-200">{quantity}</span>
+                    <button
+                      onClick={() => setQuantity(quantity + 1)}
+                      className="p-2 text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-r-xl"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
                 <button
-                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  className="p-2 text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-l-xl"
+                  onClick={handleAddToCart}
+                  className="w-full py-4 bg-brand-600 hover:bg-brand-500 text-white font-bold text-sm rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-brand-500/25 transition-all transform active:scale-95"
                 >
-                  <Minus className="w-4 h-4" />
+                  <ShoppingBag className="w-5 h-5" />
+                  <span>Add to Shopping Cart</span>
                 </button>
-                <span className="px-4 text-sm font-bold text-slate-800 dark:text-slate-200">{quantity}</span>
+              </>
+            ) : (
+              <div className="p-4 bg-amber-50 dark:bg-amber-950/40 rounded-2xl border border-amber-200 dark:border-amber-800/60 space-y-3">
+                <div className="flex items-center gap-2 text-amber-900 dark:text-amber-200 font-bold text-xs">
+                  <Bell className="w-4 h-4 text-amber-600 animate-bounce" />
+                  <span>Currently Out of Stock!</span>
+                </div>
+                <p className="text-xs text-amber-800 dark:text-amber-300">
+                  This product is temporarily unavailable. Request a restock notification and we will contact you directly on WhatsApp / Phone as soon as it goes live!
+                </p>
                 <button
-                  onClick={() => setQuantity(quantity + 1)}
-                  className="p-2 text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-r-xl"
+                  onClick={() => setShowNotifyModal(true)}
+                  className="w-full py-3.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold text-xs rounded-xl shadow-md flex items-center justify-center gap-2 transition-all transform active:scale-95"
                 >
-                  <Plus className="w-4 h-4" />
+                  <Bell className="w-4 h-4" />
+                  <span>Notify Me When In Stock</span>
                 </button>
               </div>
-            </div>
-
-            <button
-              onClick={handleAddToCart}
-              disabled={product.stock <= 0}
-              className="w-full py-4 bg-brand-600 hover:bg-brand-500 disabled:bg-slate-300 text-white font-bold text-sm rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-brand-500/25 transition-all transform active:scale-95"
-            >
-              <ShoppingBag className="w-5 h-5" />
-              <span>Add to Shopping Cart</span>
-            </button>
+            )}
           </div>
 
           {/* Guarantee Badges */}
@@ -239,6 +310,93 @@ export default function ProductDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* NOTIFY ME WHEN IN STOCK MODAL */}
+      {showNotifyModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 relative space-y-4">
+            <button
+              onClick={() => setShowNotifyModal(false)}
+              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 dark:hover:text-white rounded-xl transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="space-y-1">
+              <div className="w-10 h-10 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center">
+                <Bell className="w-5 h-5" />
+              </div>
+              <h3 className="text-base font-extrabold text-slate-900 dark:text-white pt-2">
+                Notify Me When In Stock
+              </h3>
+              <p className="text-xs text-slate-500">
+                Enter your details to get an instant alert when <span className="font-bold text-slate-700 dark:text-slate-300">"{product.title}"</span> is back in stock.
+              </p>
+            </div>
+
+            <form onSubmit={handleNotifySubmit} className="space-y-3 pt-2">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Your Full Name <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Ramesh Kumar"
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                  className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-brand-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Phone Number / WhatsApp <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="tel"
+                  required
+                  placeholder="e.g. +91 9876543210"
+                  value={customerPhone}
+                  onChange={(e) => setCustomerPhone(e.target.value)}
+                  className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-brand-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Email Address (Optional)
+                </label>
+                <input
+                  type="email"
+                  placeholder="ramesh@example.com"
+                  value={customerEmail}
+                  onChange={(e) => setCustomerEmail(e.target.value)}
+                  className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-brand-500"
+                />
+              </div>
+
+              <div className="pt-3 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowNotifyModal(false)}
+                  className="flex-1 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs rounded-xl"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingNotify}
+                  className="flex-1 py-2.5 bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs rounded-xl shadow-md flex items-center justify-center gap-1.5"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>{isSubmittingNotify ? 'Submitting...' : 'Submit Request'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Verified Reviews Section */}
       <ReviewSection productId={product.id} />

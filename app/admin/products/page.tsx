@@ -27,6 +27,7 @@ export default function AdminProductsPage() {
 
   // Form State
   const [title, setTitle] = useState('');
+  const [sku, setSku] = useState('');
   const [price, setPrice] = useState('');
   const [discountPrice, setDiscountPrice] = useState('');
   const [categoryId, setCategoryId] = useState('');
@@ -55,8 +56,11 @@ export default function AdminProductsPage() {
   const handleOpenCreateModal = () => {
     setEditingProduct(null);
     setTitle('');
-    setPrice('149.99');
-    setDiscountPrice('119.99');
+    // Auto-generate suggested unique SKU
+    const suggestedSku = 'HC-SKU-' + Math.floor(1000 + Math.random() * 9000);
+    setSku(suggestedSku);
+    setPrice('1499');
+    setDiscountPrice('1199');
     setStock('15');
     setGstRate('5');
     setImagesList(['https://images.unsplash.com/photo-1505740420928-5e560c06d30e']);
@@ -70,6 +74,7 @@ export default function AdminProductsPage() {
   const handleOpenEditModal = (prod: Product) => {
     setEditingProduct(prod);
     setTitle(prod.title);
+    setSku(prod.sku || `HC-SKU-${prod.id.substring(0, 6).toUpperCase()}`);
     setPrice(prod.price.toString());
     setDiscountPrice(prod.discountPrice ? prod.discountPrice.toString() : '');
     setCategoryId(prod.categoryId);
@@ -100,12 +105,30 @@ export default function AdminProductsPage() {
       return;
     }
 
+    if (!sku.trim()) {
+      toast.error('Product SKU is mandatory!');
+      return;
+    }
+
+    const cleanSku = sku.trim().toUpperCase();
+
+    // Check SKU uniqueness across products
+    const duplicateSkuProduct = products.find(
+      (p) => p.sku?.trim().toUpperCase() === cleanSku && p.id !== editingProduct?.id
+    );
+
+    if (duplicateSkuProduct) {
+      toast.error(`SKU "${cleanSku}" is already assigned to "${duplicateSkuProduct.title}". SKU must be unique.`);
+      return;
+    }
+
     const catObj = categories.find(c => c.id === categoryId);
     const finalImages = imagesList.length > 0 ? imagesList : ['https://images.unsplash.com/photo-1505740420928-5e560c06d30e'];
 
     const productPayload = {
       title: title.trim(),
       slug: title.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+      sku: cleanSku,
       price: parseFloat(price),
       discountPrice: discountPrice ? parseFloat(discountPrice) : undefined,
       categoryId,
@@ -126,7 +149,7 @@ export default function AdminProductsPage() {
         toast.success(`Product "${title}" updated!`);
       } else {
         await createProduct(productPayload);
-        toast.success(`Product "${title}" created with ${finalImages.length} images!`);
+        toast.success(`Product "${title}" created with SKU ${cleanSku}!`);
       }
       setIsModalOpen(false);
       fetchData();
@@ -201,7 +224,10 @@ export default function AdminProductsPage() {
             </div>
             <div className="flex-1 min-w-0">
               <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">{prod.title}</h4>
-              <p className="text-[11px] text-slate-400">${prod.discountPrice || prod.price} • Stock: {prod.stock}</p>
+              <div className="text-[10px] font-mono text-brand-600 dark:text-brand-400 font-bold my-0.5">
+                SKU: {prod.sku || `HC-SKU-${prod.id.substring(0, 6).toUpperCase()}`}
+              </div>
+              <p className="text-[11px] text-slate-400">₹{prod.discountPrice || prod.price} • Stock: {prod.stock}</p>
               <button
                 onClick={() => handleToggleStock(prod)}
                 className={`text-[10px] font-bold px-2 py-0.5 rounded-full mt-1 ${prod.stock > 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}`}
@@ -227,6 +253,7 @@ export default function AdminProductsPage() {
           <thead>
             <tr className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 font-bold uppercase text-slate-500 tracking-wider">
               <th className="px-6 py-4">Product Details</th>
+              <th className="px-6 py-4">SKU</th>
               <th className="px-6 py-4">Category</th>
               <th className="px-6 py-4">Price / Discount</th>
               <th className="px-6 py-4">Stock Status</th>
@@ -247,11 +274,16 @@ export default function AdminProductsPage() {
                     </div>
                   </div>
                 </td>
+                <td className="px-6 py-4 font-mono font-bold text-brand-600 dark:text-brand-400">
+                  <span className="bg-brand-50 dark:bg-brand-950/80 px-2 py-1 rounded-md border border-brand-200 dark:border-brand-800">
+                    {prod.sku || `HC-SKU-${prod.id.substring(0, 6).toUpperCase()}`}
+                  </span>
+                </td>
                 <td className="px-6 py-4 text-slate-600 font-medium">{prod.categoryName || 'General'}</td>
                 <td className="px-6 py-4">
-                  <span className="font-bold text-slate-900 dark:text-white">${(prod.discountPrice || prod.price).toFixed(2)}</span>
+                  <span className="font-bold text-slate-900 dark:text-white">₹{(prod.discountPrice || prod.price).toFixed(2)}</span>
                   {prod.discountPrice && (
-                    <span className="text-[10px] text-slate-400 line-through ml-1">${prod.price.toFixed(2)}</span>
+                    <span className="text-[10px] text-slate-400 line-through ml-1">₹{prod.price.toFixed(2)}</span>
                   )}
                 </td>
                 <td className="px-6 py-4">
@@ -302,37 +334,54 @@ export default function AdminProductsPage() {
             </h3>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold mb-1">Product Title</label>
-                <input
-                  type="text"
-                  required
-                  value={title}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTitle(e.target.value)}
-                  className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold mb-1">Product Title <span className="text-rose-500">*</span></label>
+                  <input
+                    type="text"
+                    required
+                    value={title}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTitle(e.target.value)}
+                    className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold mb-1 flex items-center justify-between">
+                    <span>Product SKU <span className="text-rose-500">*</span></span>
+                    <span className="text-[10px] text-brand-600 font-bold uppercase">Mandatory & Unique</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. HC-SKU-1001"
+                    value={sku}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSku(e.target.value.toUpperCase())}
+                    className="w-full px-3 py-2 text-xs font-mono font-bold rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-brand-600 dark:text-brand-400 tracking-wider uppercase"
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold mb-1">Standard Price ($)</label>
+                  <label className="block text-xs font-semibold mb-1">Standard Price (₹) <span className="text-rose-500">*</span></label>
                   <input
                     type="number"
                     step="0.01"
                     required
                     value={price}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPrice(e.target.value)}
-                    className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200"
+                    className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold mb-1">Discount Price ($ optional)</label>
+                  <label className="block text-xs font-semibold mb-1">Discount Price (₹ optional)</label>
                   <input
                     type="number"
                     step="0.01"
                     value={discountPrice}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDiscountPrice(e.target.value)}
-                    className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200"
+                    className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
                   />
                 </div>
               </div>

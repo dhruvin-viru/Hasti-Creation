@@ -1,8 +1,8 @@
 import React from 'react';
-import { OrderManagement } from '@/components/admin/OrderManagement';
+import { AdminHomeDashboard } from '@/components/admin/AdminHomeDashboard';
 
 export const revalidate = 0;
 
 export default function AdminPage() {
-  return <OrderManagement />;
+  return <AdminHomeDashboard />;
 }

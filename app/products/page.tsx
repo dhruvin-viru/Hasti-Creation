@@ -19,7 +19,7 @@ function ProductsContent() {
   // Filters state
   const [selectedCategory, setSelectedCategory] = useState<string>(initialCategory);
   const [searchQuery, setSearchQuery] = useState<string>(initialSearch);
-  const [maxPrice, setMaxPrice] = useState<number>(300);
+  const [maxPrice, setMaxPrice] = useState<number>(100000);
   const [inStockOnly, setInStockOnly] = useState<boolean>(false);
   const [sortBy, setSortBy] = useState<'featured' | 'price-asc' | 'price-desc' | 'rating'>('featured');
   const [showMobileFilter, setShowMobileFilter] = useState<boolean>(false);
@@ -42,15 +42,22 @@ function ProductsContent() {
   const filteredProducts = products.filter((prod) => {
     const price = prod.discountPrice || prod.price;
 
-    if (selectedCategory !== 'all' && prod.categoryId !== selectedCategory) {
-      return false;
+    if (selectedCategory !== 'all') {
+      const matchedCat = categories.find(
+        (c) => c.id === selectedCategory || c.slug === selectedCategory || c.name.toLowerCase() === selectedCategory.toLowerCase()
+      );
+      const categoryIdToMatch = matchedCat ? matchedCat.id : selectedCategory;
+      if (prod.categoryId !== categoryIdToMatch) {
+        return false;
+      }
     }
 
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       const matchTitle = prod.title.toLowerCase().includes(q);
-      const matchDesc = prod.description.toLowerCase().includes(q);
-      if (!matchTitle && !matchDesc) return false;
+      const matchDesc = prod.description ? prod.description.toLowerCase().includes(q) : false;
+      const matchSku = prod.sku ? prod.sku.toLowerCase().includes(q) : false;
+      if (!matchTitle && !matchDesc && !matchSku) return false;
     }
 
     if (price > maxPrice) return false;
@@ -74,7 +81,7 @@ function ProductsContent() {
   const resetFilters = () => {
     setSelectedCategory('all');
     setSearchQuery('');
-    setMaxPrice(300);
+    setMaxPrice(100000);
     setInStockOnly(false);
     setSortBy('featured');
   };
@@ -183,13 +190,13 @@ function ProductsContent() {
           <div>
             <div className="flex justify-between items-center text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">
               <span>Max Price:</span>
-              <span className="text-brand-600 font-bold">${maxPrice}</span>
+              <span className="text-brand-600 font-bold">₹{maxPrice.toLocaleString('en-IN')}</span>
             </div>
             <input
               type="range"
-              min="20"
-              max="500"
-              step="10"
+              min="100"
+              max="100000"
+              step="500"
               value={maxPrice}
               onChange={(e) => setMaxPrice(Number(e.target.value))}
               className="w-full accent-brand-600 cursor-pointer"
@@ -242,12 +249,12 @@ function ProductsContent() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold mb-2">Max Price (${maxPrice})</label>
+                <label className="block text-xs font-semibold mb-2">Max Price (₹{maxPrice.toLocaleString('en-IN')})</label>
                 <input
                   type="range"
-                  min="20"
-                  max="500"
-                  step="10"
+                  min="100"
+                  max="100000"
+                  step="500"
                   value={maxPrice}
                   onChange={(e) => setMaxPrice(Number(e.target.value))}
                   className="w-full accent-brand-600"

@@ -2,15 +2,19 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { getCategories } from '@/lib/firestoreServices';
+import { getCategories, getStoreSettings } from '@/lib/firestoreServices';
 import { Category } from '@/types/ecommerce';
 import { ShoppingBag, Sparkles } from 'lucide-react';
 
 export const Footer: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
+  const [logoUrl, setLogoUrl] = useState<string>('/logo.jpg');
 
   useEffect(() => {
     getCategories().then(setCategories);
+    getStoreSettings().then((s) => {
+      if (s?.logoUrl) setLogoUrl(s.logoUrl);
+    }).catch(() => {});
   }, []);
 
   return (
@@ -20,13 +24,17 @@ export const Footer: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-5 gap-8 mb-12">
           <div className="md:col-span-2 space-y-4">
             <Link href="/" className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-brand-600 to-brand-500 flex items-center justify-center text-white shadow-glow-indigo">
-                <ShoppingBag className="w-4 h-4" />
+              <div className="w-9 h-9 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center overflow-hidden shadow-glow shrink-0">
+                {logoUrl ? (
+                  <img src={logoUrl} alt="Hasti Creation" className="w-full h-full object-cover" />
+                ) : (
+                  <ShoppingBag className="w-4 h-4 text-white" />
+                )}
               </div>
               <span className="font-black text-xl text-white tracking-tight">HASTI CREATION</span>
             </Link>
             <p className="text-xs text-slate-400 leading-relaxed max-w-sm">
-              Your premier destination for high-grade fashion, apparel, and lifestyle gear. Built with Next.js App Router and real-time Firebase syncing.
+              Your premier destination for high-grade fashion, apparel, and lifestyle gear.
             </p>
           </div>
 
@@ -78,7 +86,7 @@ export const Footer: React.FC = () => {
         </div>
 
         <div className="pt-8 border-t border-slate-900 flex flex-col md:flex-row items-center justify-between text-xs text-slate-500 gap-4">
-          <p>© {new Date().getFullYear()} Hasti Creation. Built with Next.js, Tailwind CSS & Firebase.</p>
+          <p>© {new Date().getFullYear()} Hasti Creation. All rights reserved.</p>
           <div className="flex items-center gap-1.5 text-slate-400 font-semibold">
             <span>Crafted for high performance</span>
             <Sparkles className="w-3.5 h-3.5 text-gold-400" />

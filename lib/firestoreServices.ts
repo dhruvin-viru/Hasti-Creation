@@ -12,7 +12,7 @@ import {
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from './firebase';
-import { Product, Category, Review, Order, Coupon, Banner, OrderStatus, StoreSettings, CustomerDetails } from '@/types/ecommerce';
+import { Product, Category, Review, Order, Coupon, Banner, OrderStatus, StoreSettings, CustomerDetails, CourierPartner, StockNotification } from '@/types/ecommerce';
 import toast from 'react-hot-toast';
 
 function handleFirestorePermissionError(error: any, actionName: string) {
@@ -54,7 +54,11 @@ export async function getProducts(categorySlug?: string, searchQuery?: string): 
     }
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
-      list = list.filter(p => p.title.toLowerCase().includes(q) || p.description.toLowerCase().includes(q));
+      list = list.filter(p => 
+        p.title.toLowerCase().includes(q) || 
+        p.description?.toLowerCase().includes(q) ||
+        (p.sku && p.sku.toLowerCase().includes(q))
+      );
     }
     return list;
   } catch (error) {
@@ -63,13 +67,30 @@ export async function getProducts(categorySlug?: string, searchQuery?: string): 
   }
 }
 
-export async function getProductById(id: string): Promise<Product | null> {
+export async function getProductById(idOrSku: string): Promise<Product | null> {
   try {
-    const docRef = doc(db, 'products', id);
+    const docRef = doc(db, 'products', idOrSku);
     const snap = await getDoc(docRef);
     if (snap.exists()) {
       return { id: snap.id, ...snap.data() } as Product;
     }
+
+    // Lookup by unique SKU or ID if direct docRef match was not found
+    const productsRef = collection(db, 'products');
+    const allSnaps = await getDocs(productsRef);
+    const found = allSnaps.docs.find(d => {
+      const data = d.data();
+      return (
+        data.sku?.toUpperCase() === idOrSku.toUpperCase() ||
+        d.id === idOrSku ||
+        data.slug === idOrSku
+      );
+    });
+
+    if (found) {
+      return { id: found.id, ...found.data() } as Product;
+    }
+
     return null;
   } catch (error) {
     handleFirestorePermissionError(error, 'getProductById');
@@ -157,17 +178,49 @@ export async function deleteCategory(id: string): Promise<void> {
 }
 
 // --- BANNERS ---
+export const DEFAULT_BANNERS: Banner[] = [
+  {
+    id: 'default-banner-1',
+    title: 'Hasti Creation Luxury Collection',
+    subtitle: 'Discover exquisite ethnic sarees, designer Kurtis, and traditional craftsmanship',
+    imageUrl: '/banner-1.jpg',
+    linkUrl: '/products',
+    active: true,
+    tag: 'NEW ARRIVALS 2026'
+  },
+  {
+    id: 'default-banner-2',
+    title: 'Royal Bridal & Wedding Couture',
+    subtitle: 'Hand-crafted royal lehenga cholis & heritage wedding wear',
+    imageUrl: '/banner-2.jpg',
+    linkUrl: '/products',
+    active: true,
+    tag: 'FESTIVE SPECIAL'
+  },
+  {
+    id: 'default-banner-3',
+    title: 'Exquisite Designer Accessories',
+    subtitle: 'Premium craftsmanship and elegant ethnic fashion for every celebration',
+    imageUrl: '/banner-3.jpg',
+    linkUrl: '/products',
+    active: true,
+    tag: 'EXCLUSIVE TRENDS'
+  }
+];
+
 export async function getActiveBanners(): Promise<Banner[]> {
   try {
     const bannersRef = collection(db, 'banners');
     const snapshot = await getDocs(bannersRef);
-    if (snapshot.empty) return [];
-    return snapshot.docs
-      .map(doc => ({ id: doc.id, ...doc.data() } as Banner))
-      .filter(b => b.active);
+    if (!snapshot.empty) {
+      const activeList = snapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() } as Banner))
+        .filter(b => b.active);
+      if (activeList.length > 0) return activeList;
+    }
+    return DEFAULT_BANNERS;
   } catch (error) {
-    handleFirestorePermissionError(error, 'getActiveBanners');
-    return [];
+    return DEFAULT_BANNERS;
   }
 }
 
@@ -243,7 +296,7 @@ export async function validateCoupon(code: string, cartSubtotal: number): Promis
       return { valid: false, message: 'Coupon usage limit has been reached.' };
     }
     if (cartSubtotal < found.minOrderAmount) {
-      return { valid: false, message: `Minimum order amount of $${found.minOrderAmount} required for code ${found.code}.` };
+      return { valid: false, message: `Minimum order amount of ₹${found.minOrderAmount} required for code ${found.code}.` };
     }
     const now = new Date();
     if (new Date(found.expiryDate) < now) {
@@ -475,7 +528,9 @@ export const DEFAULT_STORE_SETTINGS: StoreSettings = {
   email: "hasticreation@gmail.com",
   gstin: "24AHRPV6064B1Z3",
   returnCode: "395006,4927491",
-  defaultHsn: "620449"
+  defaultHsn: "620449",
+  logoUrl: "/logo.jpg",
+  faviconUrl: "/favicon.ico"
 };
 
 export async function getStoreSettings(): Promise<StoreSettings> {
@@ -563,18 +618,174 @@ export async function addReview(review: Omit<Review, 'id' | 'createdAt'>): Promi
 
 // --- IMAGE UPLOAD HELPER ---
 export async function uploadProductImage(file: File): Promise<string> {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      resolve(dataUrl);
+    };
+    reader.onerror = () => {
+      resolve('/logo.jpg');
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// --- COURIER PARTNERS ---
+export const DEFAULT_COURIERS: CourierPartner[] = [
+  { id: 'bluedart', name: 'BlueDart', trackingUrlPattern: 'https://www.bluedart.com/tracking', active: true },
+  { id: 'delhivery', name: 'Delhivery', trackingUrlPattern: 'https://www.delhivery.com/track/package', active: true },
+  { id: 'fedex', name: 'FedEx', trackingUrlPattern: 'https://www.fedex.com/tracking', active: true },
+  { id: 'shiprocket', name: 'Shiprocket', trackingUrlPattern: 'https://www.shiprocket.in/shipment-tracking', active: true },
+];
+
+export const DEFAULT_COURIER_PARTNERS: CourierPartner[] = DEFAULT_COURIERS;
+
+export async function getCourierPartners(): Promise<CourierPartner[]> {
   try {
-    const fileRef = ref(storage, `products/${Date.now()}_${file.name}`);
-    await uploadBytes(fileRef, file);
-    const url = await getDownloadURL(fileRef);
-    return url;
+    const ref = collection(db, 'courierPartners');
+    const snap = await getDocs(ref);
+    if (!snap.empty) {
+      return snap.docs.map(d => ({ id: d.id, ...d.data() } as CourierPartner));
+    }
+
+    // Try fallback collection 'couriers'
+    try {
+      const altRef = collection(db, 'couriers');
+      const altSnap = await getDocs(altRef);
+      if (!altSnap.empty) {
+        return altSnap.docs.map(d => ({ id: d.id, ...d.data() } as CourierPartner));
+      }
+    } catch (err) {
+      // Ignore fallback collection permission error
+    }
+
+    return DEFAULT_COURIERS;
   } catch (error) {
-    console.warn('Firebase Storage upload failed or blocked by CORS. Converting file to Data URL fallback:', error);
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = (err) => reject(err);
-      reader.readAsDataURL(file);
+    // Catch Firestore permission error or missing collection gracefully
+    return DEFAULT_COURIERS;
+  }
+}
+
+export async function createCourierPartner(courier: Omit<CourierPartner, 'id'>): Promise<string> {
+  try {
+    const ref = collection(db, 'couriers');
+    const docRef = await addDoc(ref, courier);
+    // Also mirror to courierPartners collection for compatibility
+    try {
+      const altRef = collection(db, 'courierPartners');
+      await setDoc(doc(altRef, docRef.id), courier);
+    } catch (err) {
+      // ignore mirror error
+    }
+    return docRef.id;
+  } catch (error) {
+    handleFirestorePermissionError(error, 'createCourierPartner');
+    throw error;
+  }
+}
+
+export async function updateCourierPartner(id: string, updates: Partial<CourierPartner>): Promise<void> {
+  try {
+    const docRef = doc(db, 'couriers', id);
+    await updateDoc(docRef, updates);
+    try {
+      const altDocRef = doc(db, 'courierPartners', id);
+      await updateDoc(altDocRef, updates);
+    } catch (err) {
+      // ignore mirror error
+    }
+  } catch (error) {
+    handleFirestorePermissionError(error, 'updateCourierPartner');
+    throw error;
+  }
+}
+
+export async function deleteCourierPartner(id: string): Promise<void> {
+  try {
+    const docRef = doc(db, 'couriers', id);
+    await deleteDoc(docRef);
+    try {
+      const altDocRef = doc(db, 'courierPartners', id);
+      await deleteDoc(altDocRef);
+    } catch (err) {
+      // ignore mirror error
+    }
+  } catch (error) {
+    handleFirestorePermissionError(error, 'deleteCourierPartner');
+    throw error;
+  }
+}
+
+// --- STOCK NOTIFICATIONS (RESTOCK REQUESTS) ---
+export async function createStockNotification(
+  notification: Omit<StockNotification, 'id' | 'createdAt' | 'status'>
+): Promise<string> {
+  try {
+    const payload = sanitizeData({
+      ...notification,
+      status: 'pending',
+      createdAt: new Date().toISOString()
     });
+    const ref = collection(db, 'stockNotifications');
+    const docRef = await addDoc(ref, payload);
+    return docRef.id;
+  } catch (error) {
+    handleFirestorePermissionError(error, 'createStockNotification');
+    throw error;
+  }
+}
+
+export async function getStockNotifications(): Promise<StockNotification[]> {
+  try {
+    const ref = collection(db, 'stockNotifications');
+    const snap = await getDocs(ref);
+    const list = snap.docs.map(d => ({ id: d.id, ...d.data() } as StockNotification));
+    return list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  } catch (error) {
+    return [];
+  }
+}
+
+export function subscribeToStockNotifications(
+  callback: (notifications: StockNotification[]) => void
+): Unsubscribe {
+  try {
+    const ref = collection(db, 'stockNotifications');
+    return onSnapshot(
+      ref,
+      (snap) => {
+        const list = snap.docs.map(d => ({ id: d.id, ...d.data() } as StockNotification));
+        list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        callback(list);
+      },
+      (error) => {
+        console.warn('Stock Notifications subscription error:', error);
+        callback([]);
+      }
+    );
+  } catch (err) {
+    callback([]);
+    return () => {};
+  }
+}
+
+export async function updateStockNotificationStatus(id: string, status: 'pending' | 'notified'): Promise<void> {
+  try {
+    const docRef = doc(db, 'stockNotifications', id);
+    await updateDoc(docRef, { status });
+  } catch (error) {
+    handleFirestorePermissionError(error, 'updateStockNotificationStatus');
+    throw error;
+  }
+}
+
+export async function deleteStockNotification(id: string): Promise<void> {
+  try {
+    const docRef = doc(db, 'stockNotifications', id);
+    await deleteDoc(docRef);
+  } catch (error) {
+    handleFirestorePermissionError(error, 'deleteStockNotification');
+    throw error;
   }
 }

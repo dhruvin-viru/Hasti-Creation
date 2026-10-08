@@ -160,7 +160,7 @@ export default function MyOrdersPage() {
                         <div className="text-xs flex-1 min-w-0">
                           <h4 className="font-bold text-slate-900 dark:text-white truncate">{item.title}</h4>
                           <p className="text-slate-500 font-medium">
-                            {item.quantity} x ${item.price.toFixed(2)}
+                            {item.quantity} x ₹{item.price.toFixed(2)}
                           </p>
                         </div>
                       </div>
@@ -181,7 +181,7 @@ export default function MyOrdersPage() {
 
                   <div className="pt-2 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between">
                     <span className="text-xs font-bold text-slate-600 dark:text-slate-300">Total Paid</span>
-                    <span className="text-lg font-extrabold text-brand-600">${order.totalAmount.toFixed(2)}</span>
+                    <span className="text-lg font-extrabold text-brand-600">₹{order.totalAmount.toFixed(2)}</span>
                   </div>
                 </div>
               </div>

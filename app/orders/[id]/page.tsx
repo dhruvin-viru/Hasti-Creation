@@ -162,9 +162,9 @@ export default function OrderTrackingPage() {
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
             <span>Order Value</span>
           </h3>
-          <div className="text-2xl font-extrabold text-brand-600">${order.totalAmount.toFixed(2)}</div>
+          <div className="text-2xl font-extrabold text-brand-600">₹{order.totalAmount.toFixed(2)}</div>
           {order.discountApplied > 0 && (
-            <p className="text-[11px] text-emerald-600 font-semibold">Includes ${order.discountApplied.toFixed(2)} discount</p>
+            <p className="text-[11px] text-emerald-600 font-semibold">Includes ₹{order.discountApplied.toFixed(2)} discount</p>
           )}
         </div>
       </div>
@@ -183,11 +183,11 @@ export default function OrderTrackingPage() {
                 </div>
                 <div>
                   <h4 className="font-bold text-slate-900 dark:text-white">{item.title}</h4>
-                  <p className="text-slate-400">Qty: {item.quantity} x ${item.price.toFixed(2)}</p>
+                  <p className="text-slate-400">Qty: {item.quantity} x ₹{item.price.toFixed(2)}</p>
                 </div>
               </div>
               <div className="font-extrabold text-slate-900 dark:text-white">
-                ${(item.price * item.quantity).toFixed(2)}
+                ₹{(item.price * item.quantity).toFixed(2)}
               </div>
             </div>
           ))}

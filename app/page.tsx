@@ -106,50 +106,6 @@ export default async function HomePage() {
           </div>
         )}
       </section>
-
-      {/* Value Callout Card */}
-      <section className="bg-brand-900 text-white rounded-3xl p-8 md:p-12 relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8 shadow-2xl">
-        <div className="max-w-xl z-10 space-y-4">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-brand-800 border border-brand-700 text-brand-200">
-            <Zap className="w-3.5 h-3.5 text-amber-400" />
-            <span>EXPRESS FULFILLMENT</span>
-          </div>
-          <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">
-            Order Today, Track Live in Real-Time
-          </h2>
-          <p className="text-sm text-brand-200 leading-relaxed">
-            Our automated Firestore order state machine ensures your items are packed, booked with top courier partners, and tracked step-by-step with instant status updates.
-          </p>
-          <div className="pt-2 flex items-center gap-4">
-            <Link
-              href="/products"
-              className="px-6 py-3 bg-white text-brand-950 font-bold text-xs rounded-full hover:bg-brand-100 transition-colors shadow-lg"
-            >
-              Shop Now
-            </Link>
-            <Link
-              href="/orders/sample"
-              className="px-6 py-3 bg-brand-800 text-white font-bold text-xs rounded-full hover:bg-brand-700 transition-colors border border-brand-700 flex items-center gap-1.5"
-            >
-              <ShieldCheck className="w-4 h-4 text-emerald-400" />
-              <span>Demo Order Tracker</span>
-            </Link>
-          </div>
-        </div>
-
-        <div className="relative w-full md:w-80 h-48 rounded-2xl bg-brand-950/60 border border-brand-700/50 p-6 flex flex-col justify-between">
-          <div className="space-y-2">
-            <div className="text-[11px] font-bold text-brand-300 uppercase">Live Sync Demo</div>
-            <div className="text-xs text-white font-mono">Status: <span className="text-emerald-400 font-bold">Shipped via FedEx</span></div>
-            <div className="w-full bg-brand-800 h-2 rounded-full overflow-hidden">
-              <div className="bg-emerald-400 h-full w-3/4 animate-pulse" />
-            </div>
-          </div>
-          <div className="text-[10px] text-brand-300">
-            Real-time `onSnapshot` tracking enabled
-          </div>
-        </div>
-      </section>
     </div>
   );
 }

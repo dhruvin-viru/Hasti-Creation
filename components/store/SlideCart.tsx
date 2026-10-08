@@ -128,10 +128,10 @@ export const SlideCart: React.FC = () => {
                               {item.product.title}
                             </h4>
                             <p className="text-xs font-bold text-brand-600 mt-1">
-                              ${price.toFixed(2)}
+                              ₹{price.toFixed(2)}
                               {item.product.discountPrice && (
                                 <span className="text-[10px] text-slate-400 line-through ml-1.5 font-normal">
-                                  ${item.product.price.toFixed(2)}
+                                  ₹{item.product.price.toFixed(2)}
                                 </span>
                               )}
                             </p>
@@ -180,7 +180,7 @@ export const SlideCart: React.FC = () => {
                       <div className="flex items-center justify-between p-2.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl text-xs">
                         <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-300 font-medium">
                           <Check className="w-4 h-4 text-emerald-600" />
-                          <span>Code <strong>{appliedCoupon.code}</strong> applied ({appliedCoupon.discountType === 'percent' ? `${appliedCoupon.value}% OFF` : `$${appliedCoupon.value} FLAT`})</span>
+                          <span>Code <strong>{appliedCoupon.code}</strong> applied ({appliedCoupon.discountType === 'percent' ? `${appliedCoupon.value}% OFF` : `₹${appliedCoupon.value} FLAT`})</span>
                         </div>
                         <button
                           onClick={removeCoupon}
@@ -216,12 +216,12 @@ export const SlideCart: React.FC = () => {
                   <div className="space-y-1.5 text-xs text-slate-600 dark:text-slate-300">
                     <div className="flex justify-between">
                       <span>Subtotal</span>
-                      <span className="font-semibold text-slate-900 dark:text-white">${subtotal.toFixed(2)}</span>
+                      <span className="font-semibold text-slate-900 dark:text-white">₹{subtotal.toFixed(2)}</span>
                     </div>
                     {discount > 0 && (
                       <div className="flex justify-between text-emerald-600 font-medium">
                         <span>Discount Applied</span>
-                        <span>-${discount.toFixed(2)}</span>
+                        <span>-₹{discount.toFixed(2)}</span>
                       </div>
                     )}
                     <div className="flex justify-between text-xs text-slate-500">
@@ -230,7 +230,7 @@ export const SlideCart: React.FC = () => {
                     </div>
                     <div className="pt-2 border-t border-slate-200 dark:border-slate-700 flex justify-between items-center text-sm font-bold text-slate-900 dark:text-white">
                       <span>Total Amount</span>
-                      <span className="text-base text-brand-600">${total.toFixed(2)}</span>
+                      <span className="text-base text-brand-600">₹{total.toFixed(2)}</span>
                     </div>
                   </div>
 

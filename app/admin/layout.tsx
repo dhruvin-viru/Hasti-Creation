@@ -16,7 +16,13 @@ import {
   Key,
   AlertCircle,
   Loader2,
-  Building2
+  Building2,
+  ChevronDown,
+  Bell,
+  Headphones,
+  Home,
+  Truck,
+  Store
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -95,12 +101,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   };
 
   const navItems = [
-    { href: '/admin', label: 'Order Dashboard', icon: Package },
-    { href: '/admin/products', label: 'Product Manager', icon: Grid },
-    { href: '/admin/categories', label: 'Categories', icon: Sparkles },
-    { href: '/admin/coupons', label: 'Coupon Engine', icon: Tag },
-    { href: '/admin/banners', label: 'Hero Banners', icon: ImageIcon },
-    { href: '/admin/settings', label: 'Store Address & GSTIN', icon: Building2 },
+    { href: '/admin/orders', label: 'Manage Orders', icon: Package, badge: null },
+    { href: '/admin/products', label: 'Inventory & Products', icon: Grid, badge: null },
+    { href: '/admin/restock-requests', label: 'Restock Requests', icon: Bell, badge: null },
+    { href: '/admin/categories', label: 'Categories & Catalogs', icon: Sparkles, badge: null },
+    { href: '/admin/coupons', label: 'Coupon Engine', icon: Tag, badge: null },
+    { href: '/admin/banners', label: 'Hero Banners', icon: ImageIcon, badge: null },
+    { href: '/admin/settings', label: 'Store Address & GSTIN', icon: Building2, badge: null },
   ];
 
   // Loading state
@@ -199,52 +206,93 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     );
   }
 
-  // Authenticated Admin Dashboard Layout
+  // Authenticated Supplier Hub Admin Dashboard Layout (Full Screen & Left Edge Attached)
   return (
-    <div className="py-6 space-y-8">
-      {/* Top Admin Banner */}
-      <div className="bg-gradient-to-r from-slate-900 via-brand-950 to-slate-900 p-6 rounded-3xl text-white shadow-xl border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-brand-600 flex items-center justify-center shadow-glow">
-            <ShieldCheck className="w-6 h-6 text-white" />
+    <div className="w-full flex flex-col lg:flex-row min-h-[calc(100vh-64px)] bg-[#f4f5f8] dark:bg-slate-950">
+      {/* Dark Sidebar attached directly to left screen edge */}
+      <aside className="w-full lg:w-64 shrink-0 bg-[#181920] text-slate-300 shadow-2xl flex flex-col justify-between border-r border-slate-800/80 rounded-none min-h-[calc(100vh-64px)] lg:sticky lg:top-16 z-20">
+        <div>
+          {/* Top Brand Dropdown Selector */}
+          <div className="p-4 bg-[#14151a] border-b border-slate-800/60 flex items-center justify-between cursor-pointer hover:bg-slate-900 transition-colors">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-7 h-7 rounded-xl bg-brand-600 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-sm">
+                <Store className="w-4 h-4" />
+              </div>
+              <span className="font-extrabold text-xs text-white tracking-wide truncate">
+                HASTI CREATION
+              </span>
+            </div>
+            <ChevronDown className="w-4 h-4 text-slate-400" />
           </div>
-          <div>
-            <h1 className="text-xl md:text-2xl font-extrabold tracking-tight">Admin Control Panel</h1>
-            <p className="text-xs text-brand-200">Production Mode • Authenticated as Admin</p>
+
+          {/* Navigation Section */}
+          <div className="p-3 space-y-4">
+            {/* Home Link */}
+            <Link
+              href="/admin"
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                pathname === '/admin' ? 'text-white bg-slate-800/80 font-bold' : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
+              }`}
+            >
+              <Home className="w-4 h-4" />
+              <span>Home</span>
+            </Link>
+
+            <div>
+              <div className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">
+                Manage Business
+              </div>
+
+              <nav className="space-y-1">
+                {navItems.map((item) => {
+                  const Icon = item.icon;
+                  const active = pathname === item.href;
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium transition-all ${
+                        active
+                          ? 'bg-[#292b38] text-white font-bold border-l-4 border-brand-500 shadow-sm pl-2.5'
+                          : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <Icon className={`w-4 h-4 ${active ? 'text-brand-400' : 'text-slate-400'}`} />
+                        <span>{item.label}</span>
+                      </div>
+                      {item.badge && (
+                        <span className="px-1.5 py-0.5 text-[9px] font-bold bg-pink-600 text-white rounded uppercase">
+                          {item.badge}
+                        </span>
+                      )}
+                    </Link>
+                  );
+                })}
+              </nav>
+            </div>
           </div>
         </div>
 
-        {/* Sub-navigation tabs & Logout */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const active = pathname === item.href;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${active
-                    ? 'bg-brand-600 text-white shadow-md'
-                    : 'bg-white/10 hover:bg-white/20 text-slate-300'
-                  }`}
-              >
-                <Icon className="w-4 h-4" />
-                <span>{item.label}</span>
-              </Link>
-            );
-          })}
-
+        {/* Sidebar Footer Logout */}
+        <div className="p-3 bg-[#14151a] border-t border-slate-800/80 flex items-center justify-between">
+          <div className="text-[10px] text-slate-500 font-mono font-medium truncate">
+            Supplier Hub v2.0
+          </div>
           <button
             onClick={handleAdminLogout}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 transition-all whitespace-nowrap ml-2"
+            className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-950/30 rounded-lg transition-colors"
+            title="Logout Admin"
           >
-            <LogOut className="w-3.5 h-3.5" />
-            <span>Logout</span>
+            <LogOut className="w-4 h-4" />
           </button>
         </div>
-      </div>
+      </aside>
 
-      <div>{children}</div>
+      {/* Full-width Edge-to-Edge Main Content Panel */}
+      <main className="flex-1 w-full min-w-0 bg-[#f4f5f8] dark:bg-slate-950 p-5 md:p-8 min-h-[calc(100vh-64px)]">
+        {children}
+      </main>
     </div>
   );
 }

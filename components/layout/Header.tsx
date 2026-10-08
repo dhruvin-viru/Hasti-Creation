@@ -15,12 +15,14 @@ import {
 } from 'lucide-react';
 import { useCartStore } from '@/store/useCartStore';
 import { useAuth } from '@/context/AuthContext';
+import { getStoreSettings } from '@/lib/firestoreServices';
 
 export const Header: React.FC = () => {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [logoUrl, setLogoUrl] = useState<string>('/logo.jpg');
 
   const { getItemCount, openCart } = useCartStore();
   const { user, logout } = useAuth();
@@ -28,6 +30,9 @@ export const Header: React.FC = () => {
 
   useEffect(() => {
     setMounted(true);
+    getStoreSettings().then((s) => {
+      if (s?.logoUrl) setLogoUrl(s.logoUrl);
+    }).catch(() => {});
   }, []);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -46,8 +51,12 @@ export const Header: React.FC = () => {
           {/* Brand Logo */}
           <div className="flex items-center gap-3">
             <Link href="/" className="flex items-center gap-2.5 group">
-              <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-brand-600 via-brand-500 to-accent-600 flex items-center justify-center text-white shadow-glow-indigo group-hover:scale-105 transition-transform duration-300">
-                <ShoppingBag className="w-5 h-5" />
+              <div className="w-10 h-10 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center overflow-hidden shadow-glow group-hover:scale-105 transition-transform duration-300 shrink-0">
+                {logoUrl ? (
+                  <img src={logoUrl} alt="Hasti Creation Logo" className="w-full h-full object-cover" />
+                ) : (
+                  <ShoppingBag className="w-5 h-5 text-white" />
+                )}
               </div>
               <div className="flex flex-col">
                 <span className="font-extrabold text-xl tracking-tight text-slate-900 dark:text-white">
