@@ -1,10 +1,18 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ShoppingBag, ShieldCheck, Truck, RotateCcw, Headphones, Heart, Sparkles } from 'lucide-react';
+import { getCategories } from '@/lib/firestoreServices';
+import { Category } from '@/types/ecommerce';
+import { ShoppingBag, Sparkles } from 'lucide-react';
 
 export const Footer: React.FC = () => {
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  useEffect(() => {
+    getCategories().then(setCategories);
+  }, []);
+
   return (
     <footer className="bg-slate-950 text-slate-300 pt-16 pb-24 md:pb-12 border-t border-slate-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -18,17 +26,28 @@ export const Footer: React.FC = () => {
               <span className="font-black text-xl text-white tracking-tight">HASTI CREATION</span>
             </Link>
             <p className="text-xs text-slate-400 leading-relaxed max-w-sm">
-              Your premier destination for high-grade ethnic wear, traditional fashion, and minimalist apparel. Built with Next.js App Router and real-time Firebase syncing.
+              Your premier destination for high-grade fashion, apparel, and lifestyle gear. Built with Next.js App Router and real-time Firebase syncing.
             </p>
           </div>
 
           <div>
             <h4 className="text-xs font-black text-white uppercase tracking-widest mb-4">Shop Categories</h4>
             <ul className="space-y-2 text-xs text-slate-400">
-              <li><Link href="/products?category=ethnic-wear" className="hover:text-white transition-colors">Ethnic Wear</Link></li>
-              <li><Link href="/products?category=sarees" className="hover:text-white transition-colors">Sarees & Kurtis</Link></li>
-              <li><Link href="/products?category=lehenga" className="hover:text-white transition-colors">Lehenga Choli</Link></li>
-              <li><Link href="/products?category=gowns" className="hover:text-white transition-colors">Net Frock Gowns</Link></li>
+              {categories.length > 0 ? (
+                categories.map((cat) => (
+                  <li key={cat.id}>
+                    <Link href={`/products?category=${cat.slug || cat.id}`} className="hover:text-white transition-colors">
+                      {cat.name}
+                    </Link>
+                  </li>
+                ))
+              ) : (
+                <li>
+                  <Link href="/products" className="hover:text-white transition-colors">
+                    All Categories
+                  </Link>
+                </li>
+              )}
             </ul>
           </div>
 
@@ -37,7 +56,8 @@ export const Footer: React.FC = () => {
             <ul className="space-y-2 text-xs text-slate-400">
               <li><Link href="/products" className="hover:text-white transition-colors">All Products</Link></li>
               <li><Link href="/checkout" className="hover:text-white transition-colors">Checkout</Link></li>
-              <li><Link href="/orders/sample" className="hover:text-white transition-colors">Order Tracking</Link></li>
+              <li><Link href="/profile" className="hover:text-white transition-colors">My Profile</Link></li>
+              <li><Link href="/orders" className="hover:text-white transition-colors">Order Tracking</Link></li>
             </ul>
           </div>
 
