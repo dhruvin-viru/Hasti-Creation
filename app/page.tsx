@@ -6,7 +6,7 @@ import { ProductCard } from '@/components/store/ProductCard';
 import { getActiveBanners, getCategories, getProducts } from '@/lib/firestoreServices';
 import { ArrowRight, Flame, Sparkles, ShieldCheck, Zap, PlusCircle } from 'lucide-react';
 
-export const revalidate = 0; // Dynamic rendering
+export const dynamic = 'force-dynamic';
 
 export default async function HomePage() {
   const [banners, categories, products] = await Promise.all([
