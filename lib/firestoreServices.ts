@@ -23,21 +23,24 @@ function handleFirestorePermissionError(error: any, actionName: string) {
 }
 
 /**
- * Removes undefined fields from objects before saving to Firestore,
+ * Removes undefined fields from objects and arrays before saving to Firestore,
  * preventing 'Unsupported field value: undefined' errors.
  */
-function sanitizeData<T extends Record<string, any>>(obj: T): Record<string, any> {
-  const result: Record<string, any> = {};
-  for (const [key, value] of Object.entries(obj)) {
-    if (value !== undefined) {
-      if (value && typeof value === 'object' && !Array.isArray(value) && !(value instanceof Date)) {
+function sanitizeData(obj: any): any {
+  if (obj === null || obj === undefined) return null;
+  if (Array.isArray(obj)) {
+    return obj.map(item => sanitizeData(item));
+  }
+  if (typeof obj === 'object' && !(obj instanceof Date)) {
+    const result: Record<string, any> = {};
+    for (const [key, value] of Object.entries(obj)) {
+      if (value !== undefined) {
         result[key] = sanitizeData(value);
-      } else {
-        result[key] = value;
       }
     }
+    return result;
   }
-  return result;
+  return obj;
 }
 
 

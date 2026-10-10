@@ -101,29 +101,37 @@ export default function CheckoutPage() {
     toast.loading('Creating order in Firestore...', { id: 'order' });
 
     try {
-      const orderItems = items.map((item) => ({
-        productId: item.product.id,
-        title: item.product.title,
-        price: item.product.discountPrice || item.product.price,
-        quantity: item.quantity,
-        image: item.selectedImage || item.product.images[0] || '',
-        sku: item.product.sku || `HC-SKU-${item.product.id.substring(0, 6).toUpperCase()}`,
-        selectedSize: item.selectedSize,
-        selectedColor: item.selectedColor,
-        gstRate: item.product.gstRate ?? 5
-      }));
+      const orderItems = items.map((item) => {
+        const itemObj: any = {
+          productId: item.product.id,
+          title: item.product.title,
+          price: item.product.discountPrice || item.product.price,
+          quantity: item.quantity,
+          image: item.selectedImage || item.product.images[0] || '',
+          sku: item.product.sku || `HC-SKU-${item.product.id.substring(0, 6).toUpperCase()}`,
+          gstRate: item.product.gstRate ?? 5
+        };
+        if (item.selectedSize) itemObj.selectedSize = item.selectedSize;
+        if (item.selectedColor) itemObj.selectedColor = item.selectedColor;
+        return itemObj;
+      });
 
-      const orderId = await createOrder({
+      const orderPayload: any = {
         userId: user.uid,
         customerDetails,
         items: orderItems,
         subtotal,
         discountApplied: discount,
-        couponCode: appliedCoupon?.code,
         shippingFee,
         paymentMethod,
         totalAmount: total,
-      });
+      };
+
+      if (appliedCoupon?.code) {
+        orderPayload.couponCode = appliedCoupon.code;
+      }
+
+      const orderId = await createOrder(orderPayload);
 
       toast.success('Order placed successfully!', { id: 'order' });
       clearCart();
