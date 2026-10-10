@@ -183,7 +183,15 @@ export default function OrderTrackingPage() {
                 </div>
                 <div>
                   <h4 className="font-bold text-slate-900 dark:text-white">{item.title}</h4>
-                  <p className="text-slate-400">Qty: {item.quantity} x ₹{item.price.toFixed(2)}</p>
+                  <div className="text-[11px] text-slate-400 flex items-center gap-1.5 flex-wrap">
+                    <span>Qty: {item.quantity} x ₹{item.price.toFixed(2)}</span>
+                    {item.selectedColor && (
+                      <span className="font-bold text-brand-600 dark:text-brand-400">• Color: {item.selectedColor}</span>
+                    )}
+                    {item.selectedSize && (
+                      <span className="font-bold text-slate-600 dark:text-slate-300">• Size: {item.selectedSize}</span>
+                    )}
+                  </div>
                 </div>
               </div>
               <div className="font-extrabold text-slate-900 dark:text-white">

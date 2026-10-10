@@ -32,6 +32,8 @@ export default function ProductDetailPage() {
   const [loading, setLoading] = useState(true);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
+  const [selectedSize, setSelectedSize] = useState<string>('');
+  const [selectedColor, setSelectedColor] = useState<string>('');
 
   // Notify Me Modal State
   const [showNotifyModal, setShowNotifyModal] = useState(false);
@@ -48,6 +50,14 @@ export default function ProductDetailPage() {
       setLoading(true);
       const data = await getProductById(id);
       setProduct(data);
+      if (data) {
+        if (data.sizes && data.sizes.length > 0) {
+          setSelectedSize(data.sizes[0]);
+        }
+        if (data.colorVariants && data.colorVariants.length > 0) {
+          setSelectedColor(data.colorVariants[0].colorName);
+        }
+      }
       setLoading(false);
     }
     load();
@@ -77,9 +87,32 @@ export default function ProductDetailPage() {
   const hasDiscount = Boolean(product.discountPrice && product.discountPrice < product.price);
   const isOutOfStock = product.stock <= 0;
 
+  // Determine active images array based on selected color variant
+  const activeColorVariant = product.colorVariants?.find(
+    (cv) => cv.colorName.toLowerCase() === selectedColor.toLowerCase()
+  );
+  const displayImages = (activeColorVariant && activeColorVariant.images && activeColorVariant.images.length > 0)
+    ? activeColorVariant.images
+    : (product.images && product.images.length > 0 ? product.images : ['https://images.unsplash.com/photo-1505740420928-5e560c06d30e']);
+
+  const activeImage = displayImages[activeImageIndex] || displayImages[0];
+
+  const handleColorSelect = (colorName: string) => {
+    setSelectedColor(colorName);
+    setActiveImageIndex(0); // Reset gallery to first image of new color
+  };
+
   const handleAddToCart = () => {
-    addItem(product, quantity);
-    toast.success(`Added ${quantity}x "${product.title}" to your cart!`);
+    if (product.sizes && product.sizes.length > 0 && !selectedSize) {
+      toast.error('Please select a size first');
+      return;
+    }
+    if (product.colorVariants && product.colorVariants.length > 0 && !selectedColor) {
+      toast.error('Please select a color first');
+      return;
+    }
+    addItem(product, quantity, selectedSize || undefined, selectedColor || undefined, activeImage);
+    toast.success(`Added ${quantity}x "${product.title}" (${selectedColor ? selectedColor + ' ' : ''}${selectedSize ? 'Size: ' + selectedSize : ''}) to cart!`);
   };
 
   const handleNotifySubmit = async (e: React.FormEvent) => {
@@ -130,24 +163,29 @@ export default function ProductDetailPage() {
         <div className="space-y-4">
           <div className="relative w-full aspect-square rounded-3xl overflow-hidden bg-white border border-slate-200 dark:border-slate-800 shadow-md">
             <Image
-              src={product.images[activeImageIndex] || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e'}
+              src={activeImage}
               alt={product.title}
               fill
               priority
               className="object-cover"
             />
+            {selectedColor && (
+              <span className="absolute top-3 left-3 bg-slate-900/80 backdrop-blur-md text-white text-[11px] font-bold px-3 py-1 rounded-full shadow-md">
+                Color: {selectedColor}
+              </span>
+            )}
           </div>
 
           {/* Thumbnails */}
-          {product.images.length > 1 && (
+          {displayImages.length > 1 && (
             <div className="flex items-center gap-3 overflow-x-auto pb-2">
-              {product.images.map((img, index) => (
+              {displayImages.map((img, index) => (
                 <button
                   key={index}
                   onClick={() => setActiveImageIndex(index)}
                   className={`relative w-20 h-20 rounded-2xl overflow-hidden border-2 transition-all flex-shrink-0 ${
                     index === activeImageIndex
-                      ? 'border-brand-600 scale-105 shadow-md'
+                      ? 'border-brand-600 scale-105 shadow-md ring-2 ring-brand-500/30'
                       : 'border-slate-200 hover:border-slate-300'
                   }`}
                 >
@@ -217,6 +255,71 @@ export default function ProductDetailPage() {
               </span>
             )}
           </div>
+
+          {/* Color Variants Swatches */}
+          {product.colorVariants && product.colorVariants.length > 0 && (
+            <div className="space-y-2.5 p-3.5 bg-slate-50/80 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                  Color Option: <strong className="text-brand-600 dark:text-brand-400">{selectedColor || 'Select Color'}</strong>
+                </span>
+                <span className="text-[10px] text-slate-400">Click to view color images</span>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                {product.colorVariants.map((cv) => {
+                  const isSelected = selectedColor.toLowerCase() === cv.colorName.toLowerCase();
+                  return (
+                    <button
+                      key={cv.id}
+                      type="button"
+                      onClick={() => handleColorSelect(cv.colorName)}
+                      className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all ${
+                        isSelected
+                          ? 'bg-white dark:bg-slate-900 border-brand-600 ring-2 ring-brand-500/20 text-brand-600 dark:text-brand-400 shadow-sm'
+                          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-slate-300'
+                      }`}
+                    >
+                      <span
+                        className="w-4 h-4 rounded-full border border-slate-300 flex-shrink-0 shadow-inner"
+                        style={{ backgroundColor: cv.colorHex || '#94a3b8' }}
+                      />
+                      <span>{cv.colorName}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Size Variants Selector */}
+          {product.sizes && product.sizes.length > 0 && (
+            <div className="space-y-2.5 p-3.5 bg-slate-50/80 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                  Select Size: <strong className="text-brand-600 dark:text-brand-400">{selectedSize || 'Select Size'}</strong>
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {product.sizes.map((sz) => {
+                  const isSelected = selectedSize === sz;
+                  return (
+                    <button
+                      key={sz}
+                      type="button"
+                      onClick={() => setSelectedSize(sz)}
+                      className={`min-w-[42px] px-3 py-2 rounded-xl text-xs font-bold border transition-all ${
+                        isSelected
+                          ? 'bg-brand-600 text-white border-brand-600 shadow-md ring-2 ring-brand-500/30'
+                          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-brand-400'
+                      }`}
+                    >
+                      {sz}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Description */}
           <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">

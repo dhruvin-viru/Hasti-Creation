@@ -40,6 +40,15 @@ export default function AdminProductsPage() {
   const [gstRate, setGstRate] = useState('5');
   const [isUploading, setIsUploading] = useState(false);
 
+  // Variant States (Sizes & Color Variants)
+  const [sizes, setSizes] = useState<string[]>([]);
+  const [newSizeInput, setNewSizeInput] = useState('');
+  const [colorVariants, setColorVariants] = useState<{ id: string; colorName: string; colorHex?: string; images: string[] }[]>([]);
+  const [currentColorName, setCurrentColorName] = useState('');
+  const [currentColorHex, setCurrentColorHex] = useState('#3b82f6');
+  const [currentColorImages, setCurrentColorImages] = useState<string[]>([]);
+  const [currentColorInputUrl, setCurrentColorInputUrl] = useState('');
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -68,6 +77,12 @@ export default function AdminProductsPage() {
     setDescription('High performance audio gear built with premium materials.');
     setFeaturesStr('Noise Cancellation, 40h Battery, Bluetooth 5.3');
     setIsFeatured(true);
+    setSizes(['S', 'M', 'L', 'XL', 'Free Size']);
+    setColorVariants([]);
+    setCurrentColorName('');
+    setCurrentColorHex('#3b82f6');
+    setCurrentColorImages([]);
+    setCurrentColorInputUrl('');
     setIsModalOpen(true);
   };
 
@@ -85,6 +100,12 @@ export default function AdminProductsPage() {
     setDescription(prod.description);
     setFeaturesStr(prod.features ? prod.features.join(', ') : '');
     setIsFeatured(Boolean(prod.isFeatured));
+    setSizes(prod.sizes || []);
+    setColorVariants(prod.colorVariants || []);
+    setCurrentColorName('');
+    setCurrentColorHex('#3b82f6');
+    setCurrentColorImages([]);
+    setCurrentColorInputUrl('');
     setIsModalOpen(true);
   };
 
@@ -96,6 +117,52 @@ export default function AdminProductsPage() {
 
   const handleRemoveImage = (index: number) => {
     setImagesList((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleToggleSize = (size: string) => {
+    if (sizes.includes(size)) {
+      setSizes(sizes.filter(s => s !== size));
+    } else {
+      setSizes([...sizes, size]);
+    }
+  };
+
+  const handleAddCustomSize = () => {
+    const s = newSizeInput.trim();
+    if (!s) return;
+    if (!sizes.includes(s)) {
+      setSizes([...sizes, s]);
+    }
+    setNewSizeInput('');
+  };
+
+  const handleAddColorVariant = () => {
+    if (!currentColorName.trim()) {
+      toast.error('Please enter a color name (e.g. Red, Royal Blue)');
+      return;
+    }
+    if (currentColorImages.length === 0) {
+      toast.error('Please add at least 1 image for this color variant');
+      return;
+    }
+
+    const newVariant = {
+      id: 'col-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
+      colorName: currentColorName.trim(),
+      colorHex: currentColorHex,
+      images: [...currentColorImages]
+    };
+
+    setColorVariants(prev => [...prev, newVariant]);
+    setCurrentColorName('');
+    setCurrentColorHex('#3b82f6');
+    setCurrentColorImages([]);
+    setCurrentColorInputUrl('');
+    toast.success(`Color variant "${newVariant.colorName}" added!`);
+  };
+
+  const handleRemoveColorVariant = (id: string) => {
+    setColorVariants(prev => prev.filter(cv => cv.id !== id));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -140,7 +207,9 @@ export default function AdminProductsPage() {
       features: featuresStr.split(',').map(f => f.trim()).filter(Boolean),
       rating: editingProduct ? editingProduct.rating : 4.8,
       reviewCount: editingProduct ? editingProduct.reviewCount : 12,
-      isFeatured
+      isFeatured,
+      sizes,
+      colorVariants
     };
 
     try {
@@ -475,6 +544,198 @@ export default function AdminProductsPage() {
                     ))}
                   </div>
                 )}
+              </div>
+
+              {/* Product Sizes Manager */}
+              <div className="space-y-2 p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700">
+                <label className="block text-xs font-bold text-slate-900 dark:text-white">
+                  Available Sizes ({sizes.length})
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', 'Free Size'].map((sz) => (
+                    <button
+                      key={sz}
+                      type="button"
+                      onClick={() => handleToggleSize(sz)}
+                      className={`px-3 py-1 text-xs font-semibold rounded-lg border transition-colors ${
+                        sizes.includes(sz)
+                          ? 'bg-brand-600 text-white border-brand-600'
+                          : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-brand-400'
+                      }`}
+                    >
+                      {sz}
+                    </button>
+                  ))}
+                </div>
+                {/* Custom size input */}
+                <div className="flex gap-2 pt-1">
+                  <input
+                    type="text"
+                    placeholder="Add custom size (e.g. 38, 40, 42)..."
+                    value={newSizeInput}
+                    onChange={(e) => setNewSizeInput(e.target.value)}
+                    className="flex-1 px-3 py-1.5 text-xs rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddCustomSize}
+                    className="px-3 py-1.5 bg-slate-800 text-white font-bold text-xs rounded-xl hover:bg-slate-700"
+                  >
+                    + Size
+                  </button>
+                </div>
+                {sizes.length > 0 && (
+                  <div className="text-[11px] text-slate-500 flex flex-wrap gap-1 items-center pt-1">
+                    <span>Active sizes:</span>
+                    {sizes.map((s, idx) => (
+                      <span key={idx} className="bg-brand-100 dark:bg-brand-950 text-brand-700 dark:text-brand-300 px-2 py-0.5 rounded font-mono font-bold text-[10px]">
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Color Variants & Color-Specific Images Manager */}
+              <div className="space-y-3 p-3.5 bg-brand-50/50 dark:bg-slate-800/80 rounded-2xl border border-brand-200/60 dark:border-slate-700">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-extrabold text-slate-900 dark:text-white">
+                    Color Variants & Linked Images ({colorVariants.length})
+                  </label>
+                  <span className="text-[10px] text-brand-600 font-bold">Each color has its own image set</span>
+                </div>
+
+                {/* List of existing Color Variants */}
+                {colorVariants.length > 0 && (
+                  <div className="space-y-2">
+                    {colorVariants.map((cv) => (
+                      <div key={cv.id} className="p-2.5 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="w-5 h-5 rounded-full border border-slate-300 shadow-sm flex-shrink-0"
+                            style={{ backgroundColor: cv.colorHex || '#ccc' }}
+                          />
+                          <div>
+                            <div className="text-xs font-bold text-slate-900 dark:text-white">{cv.colorName}</div>
+                            <div className="text-[10px] text-slate-400">{cv.images.length} images attached</div>
+                          </div>
+                        </div>
+
+                        {/* Thumbnail preview */}
+                        <div className="flex items-center gap-1">
+                          {cv.images.slice(0, 3).map((imgUrl, i) => (
+                            <div key={i} className="relative w-7 h-7 rounded overflow-hidden border border-slate-200">
+                              <Image src={imgUrl} alt="" fill className="object-cover" />
+                            </div>
+                          ))}
+                          {cv.images.length > 3 && (
+                            <span className="text-[9px] text-slate-400 font-bold">+{cv.images.length - 3}</span>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveColorVariant(cv.id)}
+                            className="p-1 text-slate-400 hover:text-rose-600 ml-2"
+                            title="Remove Color Variant"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Add New Color Variant Box */}
+                <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3">
+                  <div className="text-xs font-bold text-slate-800 dark:text-slate-200">Add New Color Variant</div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="col-span-2">
+                      <label className="block text-[10px] font-semibold text-slate-500 mb-1">Color Name (e.g. Royal Blue)</label>
+                      <input
+                        type="text"
+                        placeholder="Color Name"
+                        value={currentColorName}
+                        onChange={(e) => setCurrentColorName(e.target.value)}
+                        className="w-full px-2.5 py-1.5 text-xs rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-semibold text-slate-500 mb-1">Color Swatch</label>
+                      <div className="flex items-center gap-1">
+                        <input
+                          type="color"
+                          value={currentColorHex}
+                          onChange={(e) => setCurrentColorHex(e.target.value)}
+                          className="w-8 h-7 p-0 bg-transparent rounded cursor-pointer border-0"
+                        />
+                        <input
+                          type="text"
+                          value={currentColorHex}
+                          onChange={(e) => setCurrentColorHex(e.target.value)}
+                          className="w-full px-2 py-1.5 text-[10px] font-mono rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Images upload for this color */}
+                  <div className="space-y-2">
+                    <label className="block text-[10px] font-semibold text-slate-500">
+                      Images for {currentColorName || 'this color'} ({currentColorImages.length})
+                    </label>
+                    <ImageUploader
+                      onImageUploaded={(url) => {
+                        if (url) setCurrentColorImages(prev => [...prev, url]);
+                      }}
+                    />
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="Or paste color image URL..."
+                        value={currentColorInputUrl}
+                        onChange={(e) => setCurrentColorInputUrl(e.target.value)}
+                        className="flex-1 px-2.5 py-1.5 text-xs rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (currentColorInputUrl.trim()) {
+                            setCurrentColorImages(prev => [...prev, currentColorInputUrl.trim()]);
+                            setCurrentColorInputUrl('');
+                          }
+                        }}
+                        className="px-2.5 py-1.5 bg-brand-600 text-white font-bold text-xs rounded-lg"
+                      >
+                        Add URL
+                      </button>
+                    </div>
+
+                    {currentColorImages.length > 0 && (
+                      <div className="grid grid-cols-4 gap-1.5 pt-1">
+                        {currentColorImages.map((imgUrl, idx) => (
+                          <div key={idx} className="relative w-full aspect-square rounded-lg overflow-hidden border border-slate-200">
+                            <Image src={imgUrl} alt="" fill className="object-cover" />
+                            <button
+                              type="button"
+                              onClick={() => setCurrentColorImages(prev => prev.filter((_, i) => i !== idx))}
+                              className="absolute top-0.5 right-0.5 p-0.5 bg-rose-600 text-white rounded-full"
+                            >
+                              <X className="w-2.5 h-2.5" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleAddColorVariant}
+                    className="w-full py-2 bg-slate-900 hover:bg-brand-600 text-white font-bold text-xs rounded-xl transition-colors"
+                  >
+                    + Save Color Variant
+                  </button>
+                </div>
               </div>
 
               <div>

@@ -288,6 +288,11 @@ export const BulkShippingLabelModal: React.FC<BulkShippingLabelModalProps> = ({ 
                           <tr key={idx} className="border-b border-black font-medium text-black">
                             <td className="p-1.5 border-r border-black font-mono font-bold uppercase tracking-wider">
                               {item.sku || `HC-SKU-${item.productId.substring(0, 6).toUpperCase()}`}
+                              {(item.selectedColor || item.selectedSize) && (
+                                <div className="text-[9px] font-sans font-normal text-slate-800 normal-case">
+                                  {item.selectedColor ? `Color: ${item.selectedColor}` : ''} {item.selectedSize ? `| Size: ${item.selectedSize}` : ''}
+                                </div>
+                              )}
                             </td>
                             <td className="p-1.5 border-r border-black text-center font-bold">
                               {item.quantity}
@@ -369,7 +374,14 @@ export const BulkShippingLabelModal: React.FC<BulkShippingLabelModalProps> = ({ 
 
                             return (
                               <tr key={idx} className="border-b border-black">
-                                <td className="p-1 border-r border-black font-semibold">{it.title}</td>
+                                <td className="p-1 border-r border-black font-semibold">
+                                  {it.title}
+                                  {(it.selectedColor || it.selectedSize) && (
+                                    <span className="text-[9px] font-normal text-slate-700 block">
+                                      ({it.selectedColor ? it.selectedColor : ''}{it.selectedColor && it.selectedSize ? ' | ' : ''}{it.selectedSize ? `Size: ${it.selectedSize}` : ''})
+                                    </span>
+                                  )}
+                                </td>
                                 <td className="p-1 border-r border-black font-mono">{it.hsn || storeSettings.defaultHsn || ''}</td>
                                 <td className="p-1 border-r border-black text-center font-bold">{it.quantity}</td>
                                 <td className="p-1 border-r border-black text-right font-mono">Rs. {gross.toFixed(2)}</td>

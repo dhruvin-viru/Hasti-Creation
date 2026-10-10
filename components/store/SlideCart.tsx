@@ -106,16 +106,19 @@ export const SlideCart: React.FC = () => {
                     </button>
                   </div>
                 ) : (
-                  items.map((item) => {
+                  items.map((item, idx) => {
                     const price = item.product.discountPrice || item.product.price;
+                    const itemImage = item.selectedImage || item.product.images[0] || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e';
+                    const itemKey = `${item.product.id}-${item.selectedSize || 'nosize'}-${item.selectedColor || 'nocolor'}-${idx}`;
+
                     return (
                       <div
-                        key={item.product.id}
+                        key={itemKey}
                         className="flex gap-4 p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200/60 dark:border-slate-800 relative group"
                       >
                         <div className="relative w-20 h-20 rounded-lg overflow-hidden bg-white flex-shrink-0 border border-slate-200">
                           <Image
-                            src={item.product.images[0] || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e'}
+                            src={itemImage}
                             alt={item.product.title}
                             fill
                             className="object-cover"
@@ -127,6 +130,22 @@ export const SlideCart: React.FC = () => {
                             <h4 className="text-xs font-semibold text-slate-900 dark:text-white line-clamp-1 pr-6">
                               {item.product.title}
                             </h4>
+
+                            {(item.selectedColor || item.selectedSize) && (
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {item.selectedColor && (
+                                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-brand-50 text-brand-700 dark:bg-brand-950 dark:text-brand-300 border border-brand-200 dark:border-brand-800">
+                                    Color: {item.selectedColor}
+                                  </span>
+                                )}
+                                {item.selectedSize && (
+                                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                                    Size: {item.selectedSize}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+
                             <p className="text-xs font-bold text-brand-600 mt-1">
                               ₹{price.toFixed(2)}
                               {item.product.discountPrice && (
@@ -141,7 +160,7 @@ export const SlideCart: React.FC = () => {
                             {/* Quantity Controls */}
                             <div className="flex items-center border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900">
                               <button
-                                onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
+                                onClick={() => updateQuantity(item.product.id, item.quantity - 1, item.selectedSize, item.selectedColor)}
                                 className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 rounded-l-lg"
                               >
                                 <Minus className="w-3 h-3" />
@@ -150,7 +169,7 @@ export const SlideCart: React.FC = () => {
                                 {item.quantity}
                               </span>
                               <button
-                                onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
+                                onClick={() => updateQuantity(item.product.id, item.quantity + 1, item.selectedSize, item.selectedColor)}
                                 className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 rounded-r-lg"
                               >
                                 <Plus className="w-3 h-3" />
@@ -158,7 +177,7 @@ export const SlideCart: React.FC = () => {
                             </div>
 
                             <button
-                              onClick={() => removeItem(item.product.id)}
+                              onClick={() => removeItem(item.product.id, item.selectedSize, item.selectedColor)}
                               className="text-slate-400 hover:text-rose-600 p-1 transition-colors"
                             >
                               <Trash2 className="w-4 h-4" />

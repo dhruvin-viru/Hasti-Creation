@@ -79,16 +79,19 @@ export default function CartPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
         {/* Cart Items List */}
         <div className="lg:col-span-2 space-y-4">
-          {items.map((item) => {
+          {items.map((item, idx) => {
             const price = item.product.discountPrice || item.product.price;
+            const itemImage = item.selectedImage || item.product.images[0] || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e';
+            const itemKey = `${item.product.id}-${item.selectedSize || 'nosize'}-${item.selectedColor || 'nocolor'}-${idx}`;
+
             return (
               <div
-                key={item.product.id}
+                key={itemKey}
                 className="bg-white dark:bg-slate-900 p-4 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-center gap-4"
               >
                 <div className="relative w-24 h-24 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 flex-shrink-0">
                   <Image
-                    src={item.product.images[0] || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e'}
+                    src={itemImage}
                     alt={item.product.title}
                     fill
                     className="object-cover"
@@ -102,9 +105,24 @@ export default function CartPage() {
                         {item.product.title}
                       </h3>
                       <p className="text-xs text-slate-400 font-medium">{item.product.categoryName}</p>
+                      
+                      {(item.selectedColor || item.selectedSize) && (
+                        <div className="flex flex-wrap gap-1.5 mt-1">
+                          {item.selectedColor && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-brand-50 text-brand-700 dark:bg-brand-950 dark:text-brand-300 border border-brand-200 dark:border-brand-800">
+                              Color: {item.selectedColor}
+                            </span>
+                          )}
+                          {item.selectedSize && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                              Size: {item.selectedSize}
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
                     <button
-                      onClick={() => removeItem(item.product.id)}
+                      onClick={() => removeItem(item.product.id, item.selectedSize, item.selectedColor)}
                       className="text-slate-400 hover:text-rose-600 p-1"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -114,14 +132,14 @@ export default function CartPage() {
                   <div className="flex items-center justify-between pt-2">
                     <div className="flex items-center border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800">
                       <button
-                        onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
+                        onClick={() => updateQuantity(item.product.id, item.quantity - 1, item.selectedSize, item.selectedColor)}
                         className="p-1.5 hover:bg-slate-200 text-slate-600 rounded-l-xl"
                       >
                         <Minus className="w-3.5 h-3.5" />
                       </button>
                       <span className="px-3 text-xs font-bold">{item.quantity}</span>
                       <button
-                        onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
+                        onClick={() => updateQuantity(item.product.id, item.quantity + 1, item.selectedSize, item.selectedColor)}
                         className="p-1.5 hover:bg-slate-200 text-slate-600 rounded-r-xl"
                       >
                         <Plus className="w-3.5 h-3.5" />
@@ -130,9 +148,9 @@ export default function CartPage() {
 
                     <div className="text-right">
                       <div className="text-base font-extrabold text-slate-900 dark:text-white">
-                        ${(price * item.quantity).toFixed(2)}
+                        ₹{(price * item.quantity).toFixed(2)}
                       </div>
-                      <div className="text-[11px] text-slate-400">${price.toFixed(2)} each</div>
+                      <div className="text-[11px] text-slate-400">₹{price.toFixed(2)} each</div>
                     </div>
                   </div>
                 </div>

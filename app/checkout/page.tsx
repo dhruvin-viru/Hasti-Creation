@@ -106,8 +106,10 @@ export default function CheckoutPage() {
         title: item.product.title,
         price: item.product.discountPrice || item.product.price,
         quantity: item.quantity,
-        image: item.product.images[0] || '',
+        image: item.selectedImage || item.product.images[0] || '',
         sku: item.product.sku || `HC-SKU-${item.product.id.substring(0, 6).toUpperCase()}`,
+        selectedSize: item.selectedSize,
+        selectedColor: item.selectedColor,
         gstRate: item.product.gstRate ?? 5
       }));
 
@@ -356,20 +358,27 @@ export default function CheckoutPage() {
           </h2>
 
           <div className="space-y-3 max-h-52 overflow-y-auto pr-1">
-            {items.map((item) => (
-              <div key={item.product.id} className="flex items-center gap-3 text-xs">
-                <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-slate-100 border border-slate-200 flex-shrink-0">
-                  <Image src={item.product.images[0]} alt="" fill className="object-cover" />
+            {items.map((item, idx) => {
+              const imgUrl = item.selectedImage || item.product.images[0] || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e';
+              return (
+                <div key={`${item.product.id}-${idx}`} className="flex items-center gap-3 text-xs">
+                  <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-slate-100 border border-slate-200 flex-shrink-0">
+                    <Image src={imgUrl} alt="" fill className="object-cover" />
+                  </div>
+                  <div className="flex-1 truncate">
+                    <h4 className="font-semibold text-slate-900 dark:text-white truncate">{item.product.title}</h4>
+                    <div className="text-[10px] text-slate-400 flex items-center gap-1 flex-wrap">
+                      <span>{item.quantity}x @ ₹{item.product.discountPrice || item.product.price}</span>
+                      {item.selectedColor && <span className="text-brand-600 font-bold">• {item.selectedColor}</span>}
+                      {item.selectedSize && <span className="font-bold">• Size: {item.selectedSize}</span>}
+                    </div>
+                  </div>
+                  <div className="font-bold text-slate-900 dark:text-white">
+                    ₹{((item.product.discountPrice || item.product.price) * item.quantity).toFixed(2)}
+                  </div>
                 </div>
-                <div className="flex-1 truncate">
-                  <h4 className="font-semibold text-slate-900 dark:text-white truncate">{item.product.title}</h4>
-                  <p className="text-slate-400">{item.quantity}x @ ₹{item.product.discountPrice || item.product.price}</p>
-                </div>
-                <div className="font-bold text-slate-900 dark:text-white">
-                  ₹{((item.product.discountPrice || item.product.price) * item.quantity).toFixed(2)}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Coupon Input */}

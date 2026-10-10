@@ -6,9 +6,9 @@ interface CartState {
   items: CartItem[];
   isCartOpen: boolean;
   appliedCoupon: Coupon | null;
-  addItem: (product: Product, quantity?: number) => void;
-  removeItem: (productId: string) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
+  addItem: (product: Product, quantity?: number, selectedSize?: string, selectedColor?: string, selectedImage?: string) => void;
+  removeItem: (productId: string, selectedSize?: string, selectedColor?: string) => void;
+  updateQuantity: (productId: string, quantity: number, selectedSize?: string, selectedColor?: string) => void;
   clearCart: () => void;
   applyCoupon: (coupon: Coupon) => void;
   removeCoupon: () => void;
@@ -28,36 +28,43 @@ export const useCartStore = create<CartState>()(
       isCartOpen: false,
       appliedCoupon: null,
 
-      addItem: (product: Product, quantity = 1) => {
+      addItem: (product: Product, quantity = 1, selectedSize?: string, selectedColor?: string, selectedImage?: string) => {
         set((state) => {
-          const existingIndex = state.items.findIndex(item => item.product.id === product.id);
+          const existingIndex = state.items.findIndex(
+            item => item.product.id === product.id && item.selectedSize === selectedSize && item.selectedColor === selectedColor
+          );
           let newItems = [...state.items];
           if (existingIndex > -1) {
             newItems[existingIndex] = {
               ...newItems[existingIndex],
-              quantity: newItems[existingIndex].quantity + quantity
+              quantity: newItems[existingIndex].quantity + quantity,
+              selectedImage: selectedImage || newItems[existingIndex].selectedImage
             };
           } else {
-            newItems.push({ product, quantity });
+            newItems.push({ product, quantity, selectedSize, selectedColor, selectedImage });
           }
           return { items: newItems, isCartOpen: true };
         });
       },
 
-      removeItem: (productId: string) => {
+      removeItem: (productId: string, selectedSize?: string, selectedColor?: string) => {
         set((state) => ({
-          items: state.items.filter(item => item.product.id !== productId)
+          items: state.items.filter(
+            item => !(item.product.id === productId && item.selectedSize === selectedSize && item.selectedColor === selectedColor)
+          )
         }));
       },
 
-      updateQuantity: (productId: string, quantity: number) => {
+      updateQuantity: (productId: string, quantity: number, selectedSize?: string, selectedColor?: string) => {
         if (quantity <= 0) {
-          get().removeItem(productId);
+          get().removeItem(productId, selectedSize, selectedColor);
           return;
         }
         set((state) => ({
-          items: state.items.map(item => 
-            item.product.id === productId ? { ...item, quantity } : item
+          items: state.items.map(item =>
+            (item.product.id === productId && item.selectedSize === selectedSize && item.selectedColor === selectedColor)
+              ? { ...item, quantity }
+              : item
           )
         }));
       },

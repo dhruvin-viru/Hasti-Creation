@@ -7,6 +7,13 @@ export interface Category {
   createdAt?: string;
 }
 
+export interface ColorVariant {
+  id: string;
+  colorName: string;
+  colorHex?: string;
+  images: string[];
+}
+
 export interface Product {
   id: string;
   title: string;
@@ -24,6 +31,8 @@ export interface Product {
   reviewCount: number;
   gstRate?: number;
   isFeatured?: boolean;
+  sizes?: string[];
+  colorVariants?: ColorVariant[];
   createdAt: string;
 }
 
@@ -45,6 +54,8 @@ export interface OrderItem {
   quantity: number;
   image: string;
   sku?: string;
+  selectedSize?: string;
+  selectedColor?: string;
   hsn?: string;
   gstRate?: number;
 }
@@ -127,6 +138,9 @@ export interface Banner {
 export interface CartItem {
   product: Product;
   quantity: number;
+  selectedSize?: string;
+  selectedColor?: string;
+  selectedImage?: string;
 }
 
 export interface CourierPartner {
